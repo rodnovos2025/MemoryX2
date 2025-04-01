@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Игра с кругами</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #1a1a1a; /* Темный фон */
+            font-family: 'Roboto', sans-serif; /* Современный шрифт */
+            color: white;
+            overflow: hidden;
+        }
+        .game-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            width: 90vw;
+            height: 60vh;
+            opacity: 0;
+            flex-direction: column; /* Выравнивание элементов по вертикали */
+        }
+        .circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            margin: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            outline: none;
+            user-select: none;
+            touch-action: none;
+            border: 3px solid transparent;
+        }
+        .red { background-color: #ff4d4d; box-shadow: 0 0 20px rgba(255, 77, 77, 0.7); }
+        .green { background-color: #33ff77; box-shadow: 0 0 20px rgba(51, 255, 119, 0.7); }
+        .circle:active {
+            transform: scale(1.1);
+        }
+        .circle.highlighted {
+            box-shadow: 0 0 30px 5px rgba(255, 255, 255, 0.8);
+        }
+        .score {
+            position: absolute;
+            top: 5%;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            width: 100%;
+        }
+        .message {
+            position: absolute;
+            bottom: 20px;
+            font-size: 18px;
+            text-align: center;
+            color: #fff;
+            width: 100%;
+        }
+        .start-button, .play-again-buttons button {
+            font-size: 18px;
+            padding: 15px 30px;
+            margin: 10px;
+            background: linear-gradient(135deg, #0066cc, #00cc99);
+            border: none;
+            border-radius: 30px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        .start-button:hover, .play-again-buttons button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+        .start-button {
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        .play-again-buttons {
+            display: none;
+            text-align: center;
+        }
+        .play-again-buttons button {
+            font-size: 18px;
+        }
+        @media (max-width: 600px) {
+            .circle {
+                width: 120px;
+                height: 120px;
+            }
+            .score {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="score" id="score">Очки: 0</div>
+    <div class="game-container" id="gameContainer">
+        <div class="circle red" data-color="red"></div>
+        <div class="circle green" data-color="green"></div>
+    </div>
+    <div class="message" id="message">Нажмите "Начать игру", чтобы начать!</div>
+    <button class="start-button" id="startButton">Начать игру</button>
+    <div class="play-again-buttons" id="playAgainButtons">
+        <button id="playAgainYes">Да</button>
+        <button id="playAgainNo">Нет</button>
+    </div>
+
+    <script>
+        const circles = document.querySelectorAll('.circle');
+        const scoreElement = document.getElementById('score');
+        const messageElement = document.getElementById('message');
+        const startButton = document.getElementById('startButton');
+        const playAgainButtons = document.getElementById('playAgainButtons');
+        const playAgainYes = document.getElementById('playAgainYes');
+        const playAgainNo = document.getElementById('playAgainNo');
+        let sequence = [];
+        let userSequence = [];
+        let gameStarted = false;
+        let score = 0;
+
+        function startGame() {
+            userSequence = [];
+            sequence.push(getRandomColor());
+            messageElement.textContent = "Запомни последовательность!";
+            playSequence();
+            startButton.style.display = "none"; // Прячем кнопку "Начать игру"
+            document.getElementById('gameContainer').style.opacity = 1; // Показываем круги
+        }
+
+        function getRandomColor() {
+            const colors = ['red', 'green'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        function playSequence() {
+            let i = 0;
+            const interval = setInterval(() => {
+                highlightCircle(sequence[i]);
+                i++;
+                if (i === sequence.length) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        messageElement.textContent = "Теперь введи последовательность!";
+                        gameStarted = true;
+                    }, 500);
+                }
+            }, 1000);
+        }
+
+        function highlightCircle(color) {
+            const circle = document.querySelector(`.${color}`);
+            circle.classList.add('highlighted');
+            setTimeout(() => {
+                circle.classList.remove('highlighted');
+            }, 500);
+        }
+
+        function handleUserClick(color) {
+            if (!gameStarted) return;
+            userSequence.push(color);
+            highlightCircle(color);
+
+            if (userSequence[userSequence.length - 1] !== sequence[userSequence.length - 1]) {
+                alert('Неправильный порядок! Игра начнется заново.');
+                score = 0; // Сброс очков
+                sequence = [];
+                updateScore();
+                showPlayAgain();
+                return;
+            }
+
+            if (userSequence.length === sequence.length) {
+                score++; // Увеличиваем очки
+                updateScore();
+                gameStarted = false;
+                setTimeout(startGame, 1000);
+            }
+        }
+
+        function updateScore() {
+            scoreElement.textContent = `Очки: ${score}`;
+        }
+
+        function showPlayAgain() {
+            messageElement.textContent = "Хотите сыграть снова?";
+            playAgainButtons.style.display = "block"; // Показываем кнопки для игры заново
+        }
+
+        playAgainYes.addEventListener('click', () => {
+            playAgainButtons.style.display = "none"; // Скрываем кнопки
+            startGame(); // Начинаем новую игру
+        });
+
+        playAgainNo.addEventListener('click', () => {
+            playAgainButtons.style.display = "none"; // Скрываем кнопки
+            messageElement.textContent = "Спасибо за игру!";
+        });
+
+        circles.forEach(circle => {
+            circle.addEventListener('click', () => {
+                if (gameStarted) {
+                    handleUserClick(circle.dataset.color);
+                }
+            });
+        });
+
+        startButton.addEventListener('click', startGame); // Запуск игры по нажатию на кнопку
+
+    </script>
+</body>
+</html>
